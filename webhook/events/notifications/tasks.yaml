@@ -1,1 +1,3 @@
+# tkn hub install task kaniko --namespace=tekton
+# tkn hub install task git-clone
 # tkn hub install task send-to-webhook-discord --namespace=tekton

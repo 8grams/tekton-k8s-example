@@ -26,7 +26,7 @@ spec:
         values: ["refs/heads/develop", "refs/heads/master"]
       - input: "$(params.name)"
         operator: in
-        values: ["homepage"]
+        values: ["caddy-example"]
       taskRef:
         resolver: git
         params:
@@ -69,7 +69,7 @@ spec:
       when:
       - input: "$(params.name)"
         operator: in
-        values: ["homepage"]
+        values: ["caddy-example"]
       - input: "$(params.ref)"
         operator: in
         values: ["refs/heads/master"]
@@ -93,7 +93,7 @@ spec:
         values: ["refs/heads/develop", "refs/heads/master"]
       - input: "$(params.name)"
         operator: in
-        values: ["homepage"]
+        values: ["caddy-example"]
       taskRef: 
         name: send-to-webhook-discord
       params:

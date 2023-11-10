@@ -26,7 +26,7 @@ spec:
         values: ["manual"]
       - input: "$(params.name)"
         operator: in
-        values: ["homepage"]
+        values: ["caddy-example"]
       taskRef:
         resolver: git
         params:
@@ -68,7 +68,7 @@ spec:
         values: ["manual"]
       - input: "$(params.name)"
         operator: in
-        values: ["homepage"]
+        values: ["caddy-example"]
       taskRef: 
         name: send-to-webhook-discord
       params:
