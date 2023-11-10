@@ -1,0 +1,34 @@
+# kubectl -n tekton apply -f ingress.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tekton-webhook
+  annotations:
+    kubernetes.io/ingress.class: public
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+  labels:
+    app: tekton-webhook
+spec:
+  rules:
+    - host: tekton-webhook.example.com
+      http:
+        paths:
+          - path: /tag
+            pathType: Prefix
+            backend:
+              service:
+                name: el-8grams-listener-tag
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: el-8grams-listener
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - tekton-webhook.example.com
+      secretName: tls-tekton-webhook

@@ -1,0 +1,99 @@
+# kubectl -n tekton apply -f triggers.yaml
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: 8grams-triggertemplate-tag
+  namespace: tekton
+spec:
+  params:
+    - name: name
+      description: Name of repository
+    - name: ref
+      description: Branch or tag pushed
+    - name: registry
+      description: Container registry URL
+    - name: repository_url
+      description: Git Repository URL
+    - name: git_url
+      description: Git Repository URL
+    - name: tag
+      description: Given Tags
+    - name: type
+      description: Given Type
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: 8grams-pipeline-run-tag-
+        namespace: tekton
+      spec:
+        serviceAccountName: tekton-triggers-sa
+        pipelineRef:
+          name: 8grams-pipeline-tag
+        params:
+        - name: name
+          value: $(tt.params.name)
+        - name: ref
+          value: $(tt.params.ref)
+        - name: registry
+          value: $(tt.params.registry)
+        - name: repository_url
+          value: $(tt.params.repository_url)
+        - name: git_url
+          value: $(tt.params.git_url)
+        - name: tag
+          value: $(tt.params.tag)
+        - name: type
+          value: $(tt.params.type)
+        workspaces:
+        - name: git-source
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 100Mi
+        - name: github-secret
+          secret:
+            secretName: github-secret
+        - name: gitlab-secret-registry
+          secret:
+            secretName: gitlab-secret-registry
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: 8grams-triggerbinding-tag
+  namespace: tekton
+spec:
+  params:
+    - name: name
+      value: $(body.name)
+    - name: ref
+      value: "refs/tags/$(body.tag)"
+    - name: registry
+      value: "8grams"
+    - name: repository_url
+      value: "https://github.com/8grams/$(body.name)"
+    - name: git_url
+      value: "git@github.com:8grams/$(body.name).git"
+    - name: tag
+      value: $(body.tag)
+    - name: type
+      value: $(body.type)
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: 8grams-listener-tag
+  namespace: tekton
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - bindings:
+      - ref: 8grams-triggerbinding-tag
+      template:
+        ref: 8grams-triggertemplate-tag
+

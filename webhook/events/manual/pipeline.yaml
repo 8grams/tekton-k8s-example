@@ -1,0 +1,83 @@
+# kubectl -n tekton apply -f pipeline.yaml
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: 8grams-pipeline-tag
+  namespace: tekton
+spec:
+  params:
+    - name: name
+    - name: ref
+    - name: registry
+    - name: repository_url
+    - name: git_url
+    - name: tag
+    - name: type
+  workspaces:
+    - name: git-source
+    - name: github-secret
+    - name: gitlab-secret-registry
+  tasks:
+    - name: fetch-from-git
+      when:
+      - input: "$(params.type)"
+        operator: in
+        values: ["manual"]
+      - input: "$(params.name)"
+        operator: in
+        values: ["homepage"]
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: https://github.com/tektoncd/catalog.git
+          - name: pathInRepo
+            value: /task/git-clone/0.9/git-clone.yaml
+          - name: revision
+            value: main
+      params:
+        - name: url
+          value: $(params.git_url)
+        - name: revision
+          value: $(params.ref)
+      workspaces:
+        - name: output
+          workspace: git-source
+        - name: ssh-directory
+          workspace: github-secret
+    - name: build-docker-image
+      taskRef:
+        name: kaniko
+      params:
+        - name: IMAGE
+          value: "$(params.registry):$(params.tag)"
+        - name: EXTRA_ARGS
+          value: ["--cache=false", --build-arg=DEPLOY_ENV=production]
+      runAfter: [fetch-from-git]
+      workspaces:
+        - name: source
+          workspace: git-source
+        - name: dockerconfig
+          workspace: gitlab-secret-registry
+  finally:
+    - name: notif-discord
+      when:
+      - input: "$(params.type)"
+        operator: in
+        values: ["manual"]
+      - input: "$(params.name)"
+        operator: in
+        values: ["homepage"]
+      taskRef: 
+        name: send-to-webhook-discord
+      params:
+        - name: webhook-secret
+          value: discord-webhook-secret
+        - name: message
+          value: "Build $(params.name) is done. Check on https://tekton-dashboard.example.com/#/pipelineruns for more details."
+        - name: bot-name
+          value: "Tekton"
+        - name: avatar-url
+          value: "https://github.com/tektoncd.png"
+---

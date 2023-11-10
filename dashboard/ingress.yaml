@@ -1,0 +1,27 @@
+# kubectl -n tekton-dashboard apply -f ingress.yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tekton-dashboard
+  annotations:
+    kubernetes.io/ingress.class: public
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+  labels:
+    app: tekton-dashboard
+spec:
+  rules:
+    - host: tekton-dashboard.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tekton-dashboard
+                port:
+                  number: 9097
+  tls:
+    - hosts:
+        - tekton-dashboard.example.com
+      secretName: tls-tekton-dashboard

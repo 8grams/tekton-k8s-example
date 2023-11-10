@@ -1,0 +1,87 @@
+# kubectl -n tekton apply -f triggers.yaml
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: 8grams-triggertemplate
+  namespace: tekton
+spec:
+  params:
+    - name: name
+      description: Name of repository
+    - name: ref
+      description: Branch or tag pushed
+    - name: registry
+      description: Container registry URL
+    - name: repository_url
+      description: Git Repository URL
+    - name: git_url
+      description: Git Repository URL
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: 8grams-pipeline-run-
+        namespace: tekton
+      spec:
+        serviceAccountName: tekton-triggers-sa
+        pipelineRef:
+          name: 8grams-pipeline
+        params:
+        - name: name
+          value: $(tt.params.name)
+        - name: ref
+          value: $(tt.params.ref)
+        - name: registry
+          value: $(tt.params.registry)
+        - name: repository_url
+          value: $(tt.params.repository_url)
+        - name: git_url
+          value: $(tt.params.git_url)
+        workspaces:
+        - name: git-source
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi
+        - name: github-secret
+          secret:
+            secretName: github-secret
+        # if you use private registry
+        # - name: registry-secret
+        #   secret:
+        #     secretName: registry-secret
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: 8grams-triggerbinding
+  namespace: tekton
+spec:
+  params:
+    - name: name
+      value: $(body.repository.name)
+    - name: ref
+      value: $(body.ref)
+    - name: registry
+      value: "8grams/$(body.repository.full_name)"
+    - name: repository_url
+      value: "https://github.com/$(body.repository.full_name)"
+    - name: git_url
+      value: "git@github.com:$(body.repository.full_name).git"
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: 8grams-listener
+  namespace: tekton
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - bindings:
+      - ref: 8grams-triggerbinding
+      template:
+        ref: 8grams-triggertemplate
